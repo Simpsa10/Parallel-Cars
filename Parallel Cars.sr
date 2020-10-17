@@ -1,0 +1,65 @@
+# This program will use message passing to communicate to allow cars to pass
+# on a bridge. No car heading the opposite way is allowed to head at the same
+# time.
+resource Cars()
+	var m: int; getarg(1,n)
+	op request(int),op reply(int)
+	
+	# south cars process	
+	process south(i := 1 to n)
+		var v1: int;
+		do true->
+			nap(int(random(20,8000)));
+			send request(i,1)
+			receive reply[i] (v1)
+			if v1 = 1 ->
+				write("South ", i, " on bridge")
+				nap(int(random(20,500)));
+				write("south" , i, " off bridge")
+				send request(i,0)
+			fi
+		od
+	end
+	
+	# north cars process
+	process north(i:= 1 to n)
+		var v2: int;
+		do true ->
+			nap(int(random(20,8000)));
+			send request(i,1)
+			receive reply(v2)
+			if v2 = 1 ->
+				write("north ", i, " on bridge")
+				nap(int(random(20,500)));
+				write("north ",i ," off bridge")
+				v2--
+				send reply(v2)
+			fi
+		od
+	end
+
+	# server process
+	process Server
+		var v1: int;
+		var v2: int;
+		var nb, sb:int;
+		do true->
+			receive request(v1: int)
+			if sb = 0 and nb = 0 and v2 = 0 ->
+				send reply(1)
+				nb++
+				receive reply(v1)
+				nb--
+			fi
+
+			receive request(v2:int)
+			if sb = 0 and nb = 0 and v1 = 0->
+				send reply(1)
+				sb++
+				receive reply(v2)
+				sb--
+			fi 
+		od	
+	end
+end
+
